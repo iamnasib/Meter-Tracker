@@ -1,0 +1,89 @@
+{% extends "entries/base.html" %} {% block title %}Dashboard | Meter
+Tracker{%endblock %} {% block content %}
+<section class="rounded-xl bg-white p-5 shadow-sm border border-slate-200">
+  <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
+    <h1 class="text-2xl font-semibold">Report</h1>
+    <div class="flex flex-wrap gap-2 no-print">
+      <button
+        type="button"
+        onclick="window.print()"
+        class="inline-flex rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 transition">
+        Export PDF
+      </button>
+      <a
+        href="{% url 'entries:add_entry' %}"
+        class="inline-flex rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium hover:bg-slate-100 transition">
+        Back to Add Entry
+      </a>
+    </div>
+  </div>
+
+  <div class="mb-5 grid gap-3 sm:grid-cols-2">
+    <div class="rounded-lg border border-slate-200 bg-slate-50 p-4">
+      <p class="text-sm text-slate-500">Total Count</p>
+      <p class="text-2xl font-semibold">{{ total_count }}</p>
+    </div>
+    <div class="rounded-lg border border-slate-200 bg-slate-50 p-4">
+      <p class="text-sm text-slate-500">Total Meters</p>
+      <p class="text-2xl font-semibold">{{ total_meters }}</p>
+    </div>
+  </div>
+
+  {% if entries %}
+  <div class="overflow-x-auto">
+    <table
+      class="min-w-full border border-slate-200 rounded-lg overflow-hidden">
+      <thead class="bg-slate-100">
+        <tr>
+          <th class="px-3 py-2 text-left text-sm font-semibold">#</th>
+          <th class="px-3 py-2 text-left text-sm font-semibold">Meters</th>
+          <th class="px-3 py-2 text-left text-sm font-semibold">Description</th>
+          <th class="px-3 py-2 text-left text-sm font-semibold">
+            Date &amp; Time
+          </th>
+          <th class="px-3 py-2 text-left text-sm font-semibold no-print">
+            Actions
+          </th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for entry in entries %}
+        <tr class="border-t border-slate-200">
+          <td class="px-3 py-2">{{ forloop.counter }}</td>
+          <td class="px-3 py-2">{{ entry.meters }}</td>
+          <td class="px-3 py-2 description-cell break-all min-w-[180px]">
+            {{ entry.description|default:"—" }}
+          </td>
+          <td class="px-3 py-2">{{ entry.created_at|date:"d-m-y H:i" }}</td>
+          <td class="px-3 py-2 no-print">
+            <div class="flex items-center gap-2">
+              <a
+                href="{% url 'entries:edit_entry' entry.pk %}"
+                class="inline-flex rounded-md border border-blue-300 px-3 py-1 text-xs font-medium text-blue-700 hover:bg-blue-50 transition">
+                Edit
+              </a>
+              <form
+                method="post"
+                action="{% url 'entries:delete_entry' entry.pk %}"
+                onsubmit="return confirm('Delete this entry?');">
+                {% csrf_token %}
+                <button
+                  type="submit"
+                  class="inline-flex rounded-md border border-red-300 px-3 py-1 text-xs font-medium text-red-700 hover:bg-red-50 transition">
+                  Delete
+                </button>
+              </form>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <p class="rounded-lg border border-slate-200 bg-slate-50 p-4 text-slate-700">
+    No entries yet. Go add your first one!
+  </p>
+  {% endif %}
+</section>
+{% endblock %}

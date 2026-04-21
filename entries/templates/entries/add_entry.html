@@ -1,0 +1,54 @@
+{% extends "entries/base.html" %}
+
+{% block title %}Add Entry | Meter Tracker{% endblock %}
+
+{% block content %}
+<section class="grid gap-6 md:grid-cols-3">
+    <div class="md:col-span-2 rounded-xl bg-white p-5 shadow-sm border border-slate-200">
+        <h1 class="text-2xl font-semibold mb-4">Add New Entry</h1>
+
+        <form method="post" class="space-y-4">
+            {% csrf_token %}
+
+            <div>
+                <label for="{{ form.meters.id_for_label }}" class="block font-medium mb-1">Meters (required)</label>
+                {{ form.meters }}
+                {% if form.meters.errors %}
+                    <p class="mt-1 text-sm text-red-600">{{ form.meters.errors|join:", " }}</p>
+                {% endif %}
+            </div>
+
+            <div>
+                <label for="{{ form.description.id_for_label }}" class="block font-medium mb-1">Description (optional)</label>
+                {{ form.description }}
+                {% if form.description.errors %}
+                    <p class="mt-1 text-sm text-red-600">{{ form.description.errors|join:", " }}</p>
+                {% endif %}
+            </div>
+
+            {% if form.non_field_errors %}
+                <p class="text-sm text-red-600">{{ form.non_field_errors|join:", " }}</p>
+            {% endif %}
+
+            <button type="submit" class="inline-flex rounded-lg bg-indigo-600 px-4 py-2 font-medium text-white hover:bg-indigo-700 transition">
+                Add Entry
+            </button>
+        </form>
+    </div>
+
+    <aside class="rounded-xl bg-white p-5 shadow-sm border border-slate-200 space-y-4">
+        <h2 class="text-lg font-semibold">Live Summary</h2>
+        <div class="rounded-lg bg-slate-50 p-3 border border-slate-200">
+            <p class="text-sm text-slate-500">Total Count</p>
+            <p class="text-2xl font-semibold">{{ total_count }}</p>
+        </div>
+        <div class="rounded-lg bg-slate-50 p-3 border border-slate-200">
+            <p class="text-sm text-slate-500">Total Meters</p>
+            <p class="text-2xl font-semibold">{{ total_meters }}</p>
+        </div>
+        <a href="{% url 'entries:dashboard' %}" class="inline-flex rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium hover:bg-slate-100 transition">
+            Go to Dashboard
+        </a>
+    </aside>
+</section>
+{% endblock %}

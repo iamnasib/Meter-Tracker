@@ -1,0 +1,35 @@
+/* Small custom tweaks layered on top of Tailwind utility classes. */
+body {
+  font-family: Inter, "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+}
+
+table th {
+  white-space: nowrap;
+}
+
+/* Allow long descriptions to wrap instead of stretching the table. */
+.description-cell {
+  white-space: normal;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+/* Keep printed output identical to dashboard, except hide action buttons. */
+@media print {
+  .no-print {
+    display: none !important;
+  }
+  @page {
+    margin: 0;
+    background: #fff !important;
+    padding: 0px;
+  }
+
+  html,
+  body {
+    padding: 6px;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+    background: #fff !important;
+  }
+}

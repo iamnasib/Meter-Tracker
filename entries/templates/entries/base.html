@@ -1,0 +1,47 @@
+{% load static %}
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>{% block title %}Meter Tracker{% endblock %}</title>
+    <!-- Tailwind via CDN for a clean, mobile-friendly UI without build tooling. -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="{% static 'entries/styles.css' %}" />
+  </head>
+  <body class="bg-slate-100 text-slate-800">
+    <nav class="bg-slate-900 text-white shadow no-print">
+      <div
+        class="mx-auto max-w-5xl px-4 py-4 flex items-center justify-between">
+        <a href="{% url 'entries:add_entry' %}" class="font-semibold text-lg"
+          >Meter Tracker</a
+        >
+        <div class="flex gap-3 text-sm">
+          <a
+            href="{% url 'entries:add_entry' %}"
+            class="rounded-md px-3 py-2 hover:bg-slate-700 transition"
+            >Add Entry</a
+          >
+          <a
+            href="{% url 'entries:dashboard' %}"
+            class="rounded-md px-3 py-2 hover:bg-slate-700 transition"
+            >Dashboard</a
+          >
+        </div>
+      </div>
+    </nav>
+
+    <main class="mx-auto max-w-5xl p-4 md:p-6">
+      {% if messages %}
+      <section class="mb-4 space-y-2 no-print">
+        {% for message in messages %}
+        <div
+          class="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-emerald-800">
+          {{ message }}
+        </div>
+        {% endfor %}
+      </section>
+      {% endif %} {% block content %}{% endblock %}
+    </main>
+  </body>
+</html>
