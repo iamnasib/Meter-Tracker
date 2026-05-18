@@ -1,0 +1,62 @@
+{# Shared report layout: summary cards + line table. Used on challan detail. #}
+<div class="mb-5 grid gap-3 sm:grid-cols-2">
+  <div class="rounded-lg border border-slate-200 bg-slate-50 p-4">
+    <p class="text-sm text-slate-500">{{ total_count_label|default:"Total Count" }}</p>
+    <p class="text-2xl font-semibold">{{ total_count }}</p>
+  </div>
+  <div class="rounded-lg border border-slate-200 bg-slate-50 p-4">
+    <p class="text-sm text-slate-500">{{ total_meters_label|default:"Total Meters" }}</p>
+    <p class="text-2xl font-semibold">{{ total_meters|floatformat:-2 }}</p>
+  </div>
+</div>
+
+{% if lines %}
+  <div class="overflow-x-auto">
+    <table class="min-w-full border border-slate-200 rounded-lg overflow-hidden">
+      <thead class="bg-slate-100">
+        <tr>
+          <th class="px-3 py-2 text-left text-sm font-semibold">#</th>
+          <th class="px-3 py-2 text-left text-sm font-semibold">Description</th>
+          <th class="px-3 py-2 text-left text-sm font-semibold">Meters</th>
+          
+        </tr>
+      </thead>
+      <tbody>
+        {% for line in lines %}
+          <tr class="border-t border-slate-200">
+            <td class="px-3 py-2">{{ forloop.counter }}</td>
+            <td class="px-3 py-2 description-cell break-all min-w-[180px]">
+              {{ line.description|default:"—" }}
+            </td>
+            <td class="px-3 py-2">{{ line.meters|floatformat:-2 }}</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  {% if show_actions and challan %}
+    <div class="mt-4 flex flex-wrap gap-2 no-print">
+      <a
+        href="{% url 'entries:edit_challan' challan.pk %}"
+        class="inline-flex rounded-md border border-blue-300 px-3 py-1 text-xs font-medium text-blue-700 hover:bg-blue-50 transition">
+        Edit
+      </a>
+      <form
+        method="post"
+        action="{% url 'entries:delete_challan' challan.pk %}"
+        onsubmit="return confirm('Delete this challan and all its lines?');">
+        {% csrf_token %}
+        <button
+          type="submit"
+          class="inline-flex rounded-md border border-red-300 px-3 py-1 text-xs font-medium text-red-700 hover:bg-red-50 transition">
+          Delete
+        </button>
+      </form>
+    </div>
+  {% endif %}
+{% else %}
+  <p class="rounded-lg border border-slate-200 bg-slate-50 p-4 text-slate-700">
+    No lines on this challan yet.
+  </p>
+{% endif %}

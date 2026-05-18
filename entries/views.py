@@ -1,75 +1,115 @@
+from decimal import Decimal
+
 from django.contrib import messages
+from django.db import transaction
 from django.db.models import Sum
 from django.shortcuts import get_object_or_404, redirect, render
 
-from .forms import EntryForm
-from .models import Entry
+from .forms import LineFormSet, LineFormSetEdit
+from .models import Challan, ChallanLine
 
 
 def _build_summary():
-    """Return shared summary values used across pages."""
-    total_count = Entry.objects.count()
-    total_meters = Entry.objects.aggregate(total=Sum("meters")).get("total") or 0
+    total_count = Challan.objects.count()
+    total_meters = ChallanLine.objects.aggregate(total=Sum("meters")).get("total") or Decimal(
+        "0"
+    )
     return {
         "total_count": total_count,
         "total_meters": total_meters,
     }
 
 
-def add_entry_view(request):
-    # Handle form submit (POST) and empty form display (GET).
+def create_challan_view(request):
     if request.method == "POST":
-        form = EntryForm(request.POST)
-        if form.is_valid():
-            form.save()
-            messages.success(request, "Entry added successfully!")
-            # PRG pattern: redirect after successful POST.
-            return redirect("entries:add_entry")
+        formset = LineFormSet(request.POST)
+        if formset.is_valid():
+            with transaction.atomic():
+                challan = Challan.objects.create()
+                order = 0
+                for form in formset:
+                    meters = form.cleaned_data.get("meters")
+                    if meters is not None and meters > 0:
+                        ChallanLine.objects.create(
+                            challan=challan,
+                            meters=meters,
+                            description=form.cleaned_data.get("description") or "",
+                            sort_order=order,
+                        )
+                        order += 1
+            messages.success(request, "Challan saved successfully.")
+            return redirect("entries:dashboard")
     else:
-        form = EntryForm()
+        formset = LineFormSet()
 
     context = {
-        "form": form,
+        "formset": formset,
         **_build_summary(),
     }
-    return render(request, "entries/add_entry.html", context)
+    return render(request, "entries/create_challan.html", context)
 
 
 def dashboard_view(request):
-    # Pull newest-first list from model ordering and explicit query for clarity.
-    entry_list = Entry.objects.order_by("-created_at")
+    challan_list = Challan.objects.prefetch_related("lines").order_by("-created_at")
     context = {
-        "entries": entry_list,
+        "challans": challan_list,
         **_build_summary(),
     }
     return render(request, "entries/dashboard.html", context)
 
 
-def edit_entry_view(request, pk):
-    """Edit an existing entry with full form validation."""
-    entry = get_object_or_404(Entry, pk=pk)
+def challan_detail_view(request, pk):
+    challan = get_object_or_404(Challan.objects.prefetch_related("lines"), pk=pk)
+    lines = list(challan.lines.all())
+    context = {
+        "challan": challan,
+        "lines": lines,
+        "total_count": len(lines),
+        "total_meters": challan.total_meters(),
+    }
+    return render(request, "entries/challan_detail.html", context)
+
+
+def edit_challan_view(request, pk):
+    challan = get_object_or_404(Challan.objects.prefetch_related("lines"), pk=pk)
 
     if request.method == "POST":
-        form = EntryForm(request.POST, instance=entry)
-        if form.is_valid():
-            form.save()
-            messages.success(request, "Entry updated successfully!")
-            return redirect("entries:dashboard")
+        formset = LineFormSetEdit(request.POST)
+        if formset.is_valid():
+            with transaction.atomic():
+                challan.lines.all().delete()
+                order = 0
+                for form in formset:
+                    meters = form.cleaned_data.get("meters")
+                    if meters is not None and meters > 0:
+                        ChallanLine.objects.create(
+                            challan=challan,
+                            meters=meters,
+                            description=form.cleaned_data.get("description") or "",
+                            sort_order=order,
+                        )
+                        order += 1
+            messages.success(request, "Challan updated successfully.")
+            return redirect("entries:challan_detail", pk=challan.pk)
     else:
-        form = EntryForm(instance=entry)
+        initial = [
+            {"meters": line.meters, "description": line.description}
+            for line in challan.lines.all()
+        ]
+        if not initial:
+            initial = [{}]
+        formset = LineFormSetEdit(initial=initial)
 
     context = {
-        "form": form,
-        "entry": entry,
+        "formset": formset,
+        "challan": challan,
     }
-    return render(request, "entries/edit_entry.html", context)
+    return render(request, "entries/edit_challan.html", context)
 
 
-def delete_entry_view(request, pk):
-    """Delete an entry safely via POST only."""
-    entry = get_object_or_404(Entry, pk=pk)
-
+def delete_challan_view(request, pk):
+    challan = get_object_or_404(Challan, pk=pk)
     if request.method == "POST":
-        entry.delete()
-        messages.success(request, "Entry deleted successfully!")
+        challan.delete()
+        messages.success(request, "Challan deleted successfully.")
     return redirect("entries:dashboard")

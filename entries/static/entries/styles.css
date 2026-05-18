@@ -7,6 +7,26 @@ table th {
   white-space: nowrap;
 }
 
+/* Blank lines on challan detail for handwriting name / date when printing. */
+.challan-write-line {
+  display: inline-block;
+  min-height: 1.75rem;
+  border-bottom: 1px solid #64748b;
+}
+
+.challan-write-field {
+  print-color-adjust: exact;
+  -webkit-print-color-adjust: exact;
+}
+
+@media print {
+  .challan-write-line {
+    min-height: 2rem;
+    border-bottom-width: 1.5px;
+    border-bottom-color: #000;
+  }
+}
+
 /* Allow long descriptions to wrap instead of stretching the table. */
 .description-cell {
   white-space: normal;

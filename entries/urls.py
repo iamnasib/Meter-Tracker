@@ -1,14 +1,20 @@
 from django.urls import path
 
-from .views import add_entry_view, dashboard_view, delete_entry_view, edit_entry_view
+from .views import (
+    challan_detail_view,
+    create_challan_view,
+    dashboard_view,
+    delete_challan_view,
+    edit_challan_view,
+)
 
 app_name = "entries"
 
 urlpatterns = [
-    # Add entry page available at both / and /add/.
-    path("", add_entry_view, name="add_entry"),
-    path("add/", add_entry_view, name="add_entry_alias"),
+    path("", create_challan_view, name="create_challan"),
+    path("add/", create_challan_view, name="add_entry_alias"),
     path("dashboard/", dashboard_view, name="dashboard"),
-    path("entries/<int:pk>/edit/", edit_entry_view, name="edit_entry"),
-    path("entries/<int:pk>/delete/", delete_entry_view, name="delete_entry"),
+    path("challans/<int:pk>/", challan_detail_view, name="challan_detail"),
+    path("challans/<int:pk>/edit/", edit_challan_view, name="edit_challan"),
+    path("challans/<int:pk>/delete/", delete_challan_view, name="delete_challan"),
 ]
