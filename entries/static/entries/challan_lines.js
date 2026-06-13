@@ -1,7 +1,11 @@
 /* Mirror of entries/templates/entries/_challan_lines_script.html for local static serving. */
 (function () {
-  function totalFormsInput(form) {
-    return form.querySelector('[name="form-TOTAL_FORMS"]');
+  function itemsTotalInput(form) {
+    return form.querySelector('[name="items-TOTAL_FORMS"]');
+  }
+
+  function linesTotalInput(itemBlock) {
+    return itemBlock.querySelector("[data-lines-total-forms]");
   }
 
   function stripRowErrors(row) {
@@ -13,50 +17,90 @@
     });
   }
 
+  function stripItemErrors(itemBlock) {
+    itemBlock.querySelectorAll("ul.errorlist").forEach(function (n) {
+      n.remove();
+    });
+  }
+
   function clearLineInputs(row) {
     row.querySelectorAll("input[data-line-input]").forEach(function (inp) {
       inp.value = "";
     });
   }
 
-  function reindexRows(tbody, totalEl) {
+  function clearItemInputs(itemBlock) {
+    var description = itemBlock.querySelector('[data-item-input="description"]');
+    if (description) description.value = "";
+    itemBlock.querySelectorAll("tr[data-line-row]").forEach(function (row) {
+      clearLineInputs(row);
+      stripRowErrors(row);
+    });
+    stripItemErrors(itemBlock);
+  }
+
+  function replaceItemIndex(name, itemIndex) {
+    return name.replace(/^items-\d+-/, "items-" + itemIndex + "-");
+  }
+
+  function replaceLineIndex(name, lineIndex) {
+    return name.replace(
+      /^(items-\d+-lines-)\d+(-meters)$/,
+      "$1" + lineIndex + "$2"
+    );
+  }
+
+  function reindexLines(itemBlock, itemIndex) {
+    var tbody = itemBlock.querySelector("[data-line-rows]");
+    var totalEl = linesTotalInput(itemBlock);
+    if (!tbody || !totalEl) return;
+
     var rows = tbody.querySelectorAll("tr[data-line-row]");
-    rows.forEach(function (row, index) {
-      row.querySelectorAll("[name^='form-']").forEach(function (el) {
-        el.name = el.name.replace(/form-\d+-/, "form-" + index + "-");
-        if (el.id) {
-          el.id = el.id.replace(/id_form-\d+-/, "id_form-" + index + "-");
-        }
+    rows.forEach(function (row, lineIndex) {
+      row.querySelectorAll("[name^='items-']").forEach(function (el) {
+        el.name = replaceLineIndex(replaceItemIndex(el.name, itemIndex), lineIndex);
       });
     });
+    totalEl.name = "items-" + itemIndex + "-lines-TOTAL_FORMS";
     totalEl.value = String(rows.length);
   }
 
-  function addRow(tbody, totalEl) {
+  function reindexItems(form) {
+    var totalEl = itemsTotalInput(form);
+    var blocks = form.querySelectorAll("[data-item-block]");
+    blocks.forEach(function (block, itemIndex) {
+      var description = block.querySelector('[data-item-input="description"]');
+      if (description) {
+        description.name = "items-" + itemIndex + "-description";
+      }
+      reindexLines(block, itemIndex);
+    });
+    if (totalEl) totalEl.value = String(blocks.length);
+  }
+
+  function addLine(itemBlock) {
+    var tbody = itemBlock.querySelector("[data-line-rows]");
     var rows = tbody.querySelectorAll("tr[data-line-row]");
     if (!rows.length) return;
 
     var last = rows[rows.length - 1];
-    var newIndex = rows.length;
     var row = last.cloneNode(true);
     stripRowErrors(row);
     clearLineInputs(row);
-
-    row.querySelectorAll("[name^='form-']").forEach(function (el) {
-      el.name = el.name.replace(/form-\d+-/, "form-" + newIndex + "-");
-      if (el.id) {
-        el.id = el.id.replace(/id_form-\d+-/, "id_form-" + newIndex + "-");
-      }
-    });
-
     tbody.appendChild(row);
-    totalEl.value = String(newIndex + 1);
+
+    var itemIndex = Array.prototype.indexOf.call(
+      itemBlock.closest("form").querySelectorAll("[data-item-block]"),
+      itemBlock
+    );
+    reindexLines(itemBlock, itemIndex);
 
     var meters = row.querySelector('[data-line-input="meters"]');
     if (meters) meters.focus();
   }
 
-  function removeRow(tbody, totalEl, row) {
+  function removeLine(itemBlock, row) {
+    var tbody = itemBlock.querySelector("[data-line-rows]");
     var rows = tbody.querySelectorAll("tr[data-line-row]");
     if (rows.length <= 1) {
       clearLineInputs(row);
@@ -64,22 +108,62 @@
       return;
     }
     row.remove();
-    reindexRows(tbody, totalEl);
+    var form = itemBlock.closest("form");
+    var itemIndex = Array.prototype.indexOf.call(
+      form.querySelectorAll("[data-item-block]"),
+      itemBlock
+    );
+    reindexLines(itemBlock, itemIndex);
     var firstMeters = tbody.querySelector('[data-line-input="meters"]');
     if (firstMeters) firstMeters.focus();
   }
 
+  function addItem(form) {
+    var container = form.querySelector("#item-blocks");
+    var blocks = container.querySelectorAll("[data-item-block]");
+    if (!blocks.length) return;
+
+    var last = blocks[blocks.length - 1];
+    var block = last.cloneNode(true);
+    stripItemErrors(block);
+    clearItemInputs(block);
+
+    var tbody = block.querySelector("[data-line-rows]");
+    var rows = tbody.querySelectorAll("tr[data-line-row]");
+    rows.forEach(function (row, index) {
+      if (index > 0) row.remove();
+    });
+
+    container.appendChild(block);
+    reindexItems(form);
+
+    var description = block.querySelector('[data-item-input="description"]');
+    if (description) description.focus();
+  }
+
+  function removeItem(form, itemBlock) {
+    var container = form.querySelector("#item-blocks");
+    var blocks = container.querySelectorAll("[data-item-block]");
+    if (blocks.length <= 1) {
+      clearItemInputs(itemBlock);
+      return;
+    }
+    itemBlock.remove();
+    reindexItems(form);
+    var firstDescription = container.querySelector('[data-item-input="description"]');
+    if (firstDescription) firstDescription.focus();
+  }
+
   function isLineInput(target) {
-    return target && target.matches && target.matches("[data-line-input]");
+    return target && target.matches && target.matches('[data-line-input="meters"]');
   }
 
   function initChallanLineForm(form) {
     if (!form || form.dataset.challanLinesInit === "1") return;
     form.dataset.challanLinesInit = "1";
 
-    var tbody = form.querySelector("#line-rows");
-    var totalEl = totalFormsInput(form);
-    if (!tbody || !totalEl) return;
+    var container = form.querySelector("#item-blocks");
+    if (!container) return;
 
     form.addEventListener(
       "keydown",
@@ -88,22 +172,39 @@
         if (!isLineInput(e.target)) return;
         e.preventDefault();
         e.stopPropagation();
-        addRow(tbody, totalEl);
+        var itemBlock = e.target.closest("[data-item-block]");
+        if (itemBlock) addLine(itemBlock);
       },
       true
     );
 
-    tbody.addEventListener("click", function (e) {
-      var btn = e.target.closest(".line-remove-btn");
-      if (!btn) return;
-      var row = btn.closest("tr[data-line-row]");
-      if (row) removeRow(tbody, totalEl, row);
+    container.addEventListener("click", function (e) {
+      var lineBtn = e.target.closest(".line-remove-btn");
+      if (lineBtn) {
+        var row = lineBtn.closest("tr[data-line-row]");
+        var itemBlock = lineBtn.closest("[data-item-block]");
+        if (row && itemBlock) removeLine(itemBlock, row);
+        return;
+      }
+
+      var addLineBtn = e.target.closest(".item-add-line-btn");
+      if (addLineBtn) {
+        var block = addLineBtn.closest("[data-item-block]");
+        if (block) addLine(block);
+        return;
+      }
+
+      var removeItemBtn = e.target.closest(".item-remove-btn");
+      if (removeItemBtn) {
+        var itemBlock = removeItemBtn.closest("[data-item-block]");
+        if (itemBlock) removeItem(form, itemBlock);
+      }
     });
 
-    var addBtn = form.querySelector("#line-add-btn");
-    if (addBtn) {
-      addBtn.addEventListener("click", function () {
-        addRow(tbody, totalEl);
+    var addItemBtn = form.querySelector("#item-add-btn");
+    if (addItemBtn) {
+      addItemBtn.addEventListener("click", function () {
+        addItem(form);
       });
     }
   }

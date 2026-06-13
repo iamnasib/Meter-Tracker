@@ -5,7 +5,7 @@ from django.db import transaction
 from django.db.models import Sum
 from django.shortcuts import get_object_or_404, redirect, render
 
-from .forms import LineFormSet, LineFormSetEdit
+from .forms import ChallanComposeForm, challan_initial_from_instance, default_challan_initial
 from .models import Challan, ChallanLine
 
 
@@ -22,35 +22,24 @@ def _build_summary():
 
 def create_challan_view(request):
     if request.method == "POST":
-        formset = LineFormSet(request.POST)
-        if formset.is_valid():
+        form = ChallanComposeForm(data=request.POST)
+        if form.is_valid():
             with transaction.atomic():
-                challan = Challan.objects.create()
-                order = 0
-                for form in formset:
-                    meters = form.cleaned_data.get("meters")
-                    if meters is not None and meters > 0:
-                        ChallanLine.objects.create(
-                            challan=challan,
-                            meters=meters,
-                            description=form.cleaned_data.get("description") or "",
-                            sort_order=order,
-                        )
-                        order += 1
+                form.save()
             messages.success(request, "Challan saved successfully.")
             return redirect("entries:dashboard")
     else:
-        formset = LineFormSet()
+        form = ChallanComposeForm(initial=default_challan_initial())
 
     context = {
-        "formset": formset,
+        "form": form,
         **_build_summary(),
     }
     return render(request, "entries/create_challan.html", context)
 
 
 def dashboard_view(request):
-    challan_list = Challan.objects.prefetch_related("lines").order_by("-created_at")
+    challan_list = Challan.objects.prefetch_related("items__lines").order_by("-created_at")
     context = {
         "challans": challan_list,
         **_build_summary(),
@@ -59,49 +48,38 @@ def dashboard_view(request):
 
 
 def challan_detail_view(request, pk):
-    challan = get_object_or_404(Challan.objects.prefetch_related("lines"), pk=pk)
-    lines = list(challan.lines.all())
+    challan = get_object_or_404(
+        Challan.objects.prefetch_related("items__lines"),
+        pk=pk,
+    )
+    items = list(challan.items.all())
     context = {
         "challan": challan,
-        "lines": lines,
-        "total_count": len(lines),
+        "items": items,
+        "total_count": challan.line_count(),
         "total_meters": challan.total_meters(),
     }
     return render(request, "entries/challan_detail.html", context)
 
 
 def edit_challan_view(request, pk):
-    challan = get_object_or_404(Challan.objects.prefetch_related("lines"), pk=pk)
+    challan = get_object_or_404(
+        Challan.objects.prefetch_related("items__lines"),
+        pk=pk,
+    )
 
     if request.method == "POST":
-        formset = LineFormSetEdit(request.POST)
-        if formset.is_valid():
+        form = ChallanComposeForm(data=request.POST)
+        if form.is_valid():
             with transaction.atomic():
-                challan.lines.all().delete()
-                order = 0
-                for form in formset:
-                    meters = form.cleaned_data.get("meters")
-                    if meters is not None and meters > 0:
-                        ChallanLine.objects.create(
-                            challan=challan,
-                            meters=meters,
-                            description=form.cleaned_data.get("description") or "",
-                            sort_order=order,
-                        )
-                        order += 1
+                form.save(challan=challan)
             messages.success(request, "Challan updated successfully.")
             return redirect("entries:challan_detail", pk=challan.pk)
     else:
-        initial = [
-            {"meters": line.meters, "description": line.description}
-            for line in challan.lines.all()
-        ]
-        if not initial:
-            initial = [{}]
-        formset = LineFormSetEdit(initial=initial)
+        form = ChallanComposeForm(initial=challan_initial_from_instance(challan))
 
     context = {
-        "formset": formset,
+        "form": form,
         "challan": challan,
     }
     return render(request, "entries/edit_challan.html", context)

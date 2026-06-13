@@ -14,26 +14,46 @@ class Challan(models.Model):
         ordering = ["-created_at"]
 
     def total_meters(self) -> Decimal:
-        total = self.lines.aggregate(t=Sum("meters")).get("t")
+        total = ChallanLine.objects.filter(item__challan=self).aggregate(t=Sum("meters")).get(
+            "t"
+        )
         return total if total is not None else Decimal("0")
 
     def line_count(self) -> int:
-        return self.lines.count()
+        return ChallanLine.objects.filter(item__challan=self).count()
 
     def __str__(self) -> str:
         return f"Challan #{self.pk} — {self.total_meters()} m"
 
 
-class ChallanLine(models.Model):
-    """One line item: meters (required) and optional description."""
+class ChallanItem(models.Model):
+    """One described block on a challan; holds multiple meter lines."""
 
     challan = models.ForeignKey(
         Challan,
         on_delete=models.CASCADE,
+        related_name="items",
+    )
+    description = models.TextField(blank=True)
+    sort_order = models.PositiveIntegerField(default=0)
+
+    class Meta:
+        ordering = ["sort_order", "id"]
+
+    def __str__(self) -> str:
+        label = self.description.strip() or f"Item {self.pk}"
+        return f"{label} ({self.lines.count()} lines)"
+
+
+class ChallanLine(models.Model):
+    """One meter reading under a challan item."""
+
+    item = models.ForeignKey(
+        ChallanItem,
+        on_delete=models.CASCADE,
         related_name="lines",
     )
     meters = models.DecimalField(max_digits=10, decimal_places=2)
-    description = models.TextField(blank=True)
     sort_order = models.PositiveIntegerField(default=0)
 
     class Meta:

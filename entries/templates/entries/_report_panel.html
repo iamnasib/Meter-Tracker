@@ -1,4 +1,4 @@
-{# Shared report layout: summary cards + line table. Used on challan detail. #}
+{# Shared report layout: summary cards + grouped item table. Used on challan detail. #}
 <div class="mb-5 grid gap-3 sm:grid-cols-2">
   <div class="rounded-lg border border-slate-200 bg-slate-50 p-4">
     <p class="text-sm text-slate-500">{{ total_count_label|default:"Total Count" }}</p>
@@ -10,7 +10,7 @@
   </div>
 </div>
 
-{% if lines %}
+{% if items %}
   <div class="overflow-x-auto">
     <table class="min-w-full border border-slate-200 rounded-lg overflow-hidden">
       <thead class="bg-slate-100">
@@ -18,18 +18,23 @@
           <th class="px-3 py-2 text-left text-sm font-semibold">#</th>
           <th class="px-3 py-2 text-left text-sm font-semibold">Description</th>
           <th class="px-3 py-2 text-left text-sm font-semibold">Meters</th>
-          
         </tr>
       </thead>
       <tbody>
-        {% for line in lines %}
-          <tr class="border-t border-slate-200">
-            <td class="px-3 py-2">{{ forloop.counter }}</td>
-            <td class="px-3 py-2 description-cell break-all min-w-[180px]">
-              {{ line.description|default:"—" }}
-            </td>
-            <td class="px-3 py-2">{{ line.meters|floatformat:-2 }}</td>
-          </tr>
+        {% for item in items %}
+          {% with line_count=item.lines.all|length %}
+            {% for line in item.lines.all %}
+              <tr class="border-t border-slate-200">
+                {% if forloop.first %}
+                  <td class="px-3 py-2 align-middle" rowspan="{{ line_count }}">{{ forloop.parentloop.counter }}</td>
+                  <td class="px-3 py-2 description-cell break-all min-w-[180px] align-middle" rowspan="{{ line_count }}">
+                    {{ item.description|default:"—" }}
+                  </td>
+                {% endif %}
+                <td class="px-3 py-2">{{ line.meters|floatformat:-2 }}</td>
+              </tr>
+            {% endfor %}
+          {% endwith %}
         {% endfor %}
       </tbody>
     </table>

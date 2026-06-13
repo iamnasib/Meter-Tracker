@@ -7,18 +7,20 @@
   <div class="md:col-span-2 rounded-xl bg-white p-5 shadow-sm border border-slate-200">
     <h1 class="text-2xl font-semibold mb-1">Create Challan</h1>
     <p class="text-sm text-slate-500 mb-4">
-      Enter meters and optional description per line. Press <kbd class="rounded border border-slate-300 bg-slate-50 px-1">Enter</kbd> to add a line, or use <strong>Add line</strong>. Use <strong>×</strong> to remove a line.
+      Add a description once, then enter multiple meter lines under it. Press
+      <kbd class="rounded border border-slate-300 bg-slate-50 px-1">Enter</kbd>
+      in a meters field to add another line, or use <strong>Add meter line</strong>.
+      Use <strong>Add item</strong> for another description block.
     </p>
 
     <form method="post" class="challan-lines-form space-y-4">
       {% csrf_token %}
-      {{ formset.management_form }}
 
-      {% if formset.non_form_errors %}
-        <p class="text-sm text-red-600">{{ formset.non_form_errors|join:", " }}</p>
+      {% if form.errors %}
+        <p class="text-sm text-red-600">{{ form.errors|join:", " }}</p>
       {% endif %}
 
-      {% include "entries/_challan_line_table.html" %}
+      {% include "entries/_challan_item_form.html" %}
 
       <div class="flex flex-wrap items-center gap-2">
         <button
