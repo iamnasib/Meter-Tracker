@@ -34,6 +34,23 @@ table th {
   word-break: break-word;
 }
 
+.challan-report-table .meters-inline-cell {
+  width: 100%;
+}
+
+.meters-inline {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem 0.85rem;
+}
+
+.meter-value {
+  display: inline-block;
+  white-space: nowrap;
+  line-height: 1.5;
+}
+
 /* Keep printed output identical to dashboard, except hide action buttons. */
 @media print {
   .no-print {

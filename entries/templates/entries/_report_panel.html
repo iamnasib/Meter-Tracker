@@ -1,8 +1,12 @@
 {# Shared report layout: summary cards + grouped item table. Used on challan detail. #}
-<div class="mb-5 grid gap-3 sm:grid-cols-2">
+<div class="mb-5 grid gap-3 sm:grid-cols-3">
   <div class="rounded-lg border border-slate-200 bg-slate-50 p-4">
-    <p class="text-sm text-slate-500">{{ total_count_label|default:"Total Count" }}</p>
-    <p class="text-2xl font-semibold">{{ total_count }}</p>
+    <p class="text-sm text-slate-500">{{ item_count_label|default:"Total Items" }}</p>
+    <p class="text-2xl font-semibold">{{ item_count }}</p>
+  </div>
+  <div class="rounded-lg border border-slate-200 bg-slate-50 p-4">
+    <p class="text-sm text-slate-500">{{ line_count_label|default:"Total Count" }}</p>
+    <p class="text-2xl font-semibold">{{ line_count }}</p>
   </div>
   <div class="rounded-lg border border-slate-200 bg-slate-50 p-4">
     <p class="text-sm text-slate-500">{{ total_meters_label|default:"Total Meters" }}</p>
@@ -10,31 +14,37 @@
   </div>
 </div>
 
-{% if items %}
+{% if report_rows %}
   <div class="overflow-x-auto">
-    <table class="min-w-full border border-slate-200 rounded-lg overflow-hidden">
+    <table class="challan-report-table min-w-full border border-slate-200 rounded-lg overflow-hidden">
       <thead class="bg-slate-100">
         <tr>
-          <th class="px-3 py-2 text-left text-sm font-semibold">#</th>
-          <th class="px-3 py-2 text-left text-sm font-semibold">Description</th>
+          <th class="px-3 py-2 text-left text-sm font-semibold w-14">Item #</th>
+          <th class="px-3 py-2 text-left text-sm font-semibold w-28 max-w-[7rem]">Description</th>
+          <th class="px-3 py-2 text-left text-sm font-semibold w-14">Count</th>
           <th class="px-3 py-2 text-left text-sm font-semibold">Meters</th>
+          <th class="px-3 py-2 text-left text-sm font-semibold w-28">Total Meters</th>
         </tr>
       </thead>
       <tbody>
-        {% for item in items %}
-          {% with line_count=item.lines.all|length %}
-            {% for line in item.lines.all %}
-              <tr class="border-t border-slate-200">
-                {% if forloop.first %}
-                  <td class="px-3 py-2 align-middle" rowspan="{{ line_count }}">{{ forloop.parentloop.counter }}</td>
-                  <td class="px-3 py-2 description-cell break-all min-w-[180px] align-middle" rowspan="{{ line_count }}">
-                    {{ item.description|default:"—" }}
-                  </td>
-                {% endif %}
-                <td class="px-3 py-2">{{ line.meters|floatformat:-2 }}</td>
-              </tr>
-            {% endfor %}
-          {% endwith %}
+        {% for row in report_rows %}
+          <tr class="border-t border-slate-200">
+            <td class="px-3 py-2 align-top">{{ row.item_number }}</td>
+            <td class="px-3 py-2 description-cell align-top w-28 max-w-[7rem]">
+              {{ row.description|default:"—" }}
+            </td>
+            <td class="px-3 py-2 align-top">{{ row.item_line_count }}</td>
+            <td class="px-3 py-2 align-top meters-inline-cell">
+              <div class="meters-inline">
+                {% for meters in row.meters_values %}
+                  <span class="meter-value">{{ meters|floatformat:-2 }} +</span>
+                {% endfor %}
+              </div>
+            </td>
+            <td class="px-3 py-2 align-top whitespace-nowrap font-medium">
+              {{ row.item_total_meters|floatformat:-2 }}
+            </td>
+          </tr>
         {% endfor %}
       </tbody>
     </table>

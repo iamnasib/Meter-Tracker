@@ -47,6 +47,23 @@ def dashboard_view(request):
     return render(request, "entries/dashboard.html", context)
 
 
+def _build_report_rows(items):
+    rows = []
+    for item_num, item in enumerate(items, start=1):
+        lines = list(item.lines.all())
+        meters_values = [line.meters for line in lines]
+        rows.append(
+            {
+                "item_number": item_num,
+                "description": item.description,
+                "item_line_count": len(lines),
+                "meters_values": meters_values,
+                "item_total_meters": sum(meters_values, Decimal("0")),
+            }
+        )
+    return rows
+
+
 def challan_detail_view(request, pk):
     challan = get_object_or_404(
         Challan.objects.prefetch_related("items__lines"),
@@ -56,7 +73,9 @@ def challan_detail_view(request, pk):
     context = {
         "challan": challan,
         "items": items,
-        "total_count": challan.line_count(),
+        "report_rows": _build_report_rows(items),
+        "item_count": challan.item_count(),
+        "line_count": challan.line_count(),
         "total_meters": challan.total_meters(),
     }
     return render(request, "entries/challan_detail.html", context)

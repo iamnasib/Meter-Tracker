@@ -22,6 +22,9 @@ class Challan(models.Model):
     def line_count(self) -> int:
         return ChallanLine.objects.filter(item__challan=self).count()
 
+    def item_count(self) -> int:
+        return self.items.count()
+
     def __str__(self) -> str:
         return f"Challan #{self.pk} — {self.total_meters()} m"
 

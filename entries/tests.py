@@ -96,11 +96,30 @@ class ChallanFlowTests(TestCase):
         r = self.client.get(url)
         self.assertEqual(r.status_code, 200)
         self.assertContains(r, "Export PDF")
+        self.assertContains(r, "Total Items")
         self.assertContains(r, "Total Count")
         self.assertContains(r, "Total Meters")
         self.assertContains(r, "12")
         self.assertContains(r, "Roll A")
         self.assertContains(r, reverse("entries:edit_challan", args=[c.pk]))
+
+    def test_challan_detail_shows_item_and_line_counts(self):
+        c = Challan.objects.create()
+        item_a = ChallanItem.objects.create(challan=c, description="Roll A", sort_order=0)
+        ChallanLine.objects.create(item=item_a, meters=5, sort_order=0)
+        ChallanLine.objects.create(item=item_a, meters=3, sort_order=1)
+        item_b = ChallanItem.objects.create(challan=c, description="Roll B", sort_order=1)
+        ChallanLine.objects.create(item=item_b, meters=4, sort_order=0)
+        r = self.client.get(reverse("entries:challan_detail", args=[c.pk]))
+        self.assertEqual(r.context["item_count"], 2)
+        self.assertEqual(r.context["line_count"], 3)
+        report_rows = r.context["report_rows"]
+        self.assertEqual(len(report_rows), 2)
+        self.assertEqual(report_rows[0]["item_line_count"], 2)
+        self.assertEqual(len(report_rows[0]["meters_values"]), 2)
+        self.assertEqual(report_rows[0]["item_total_meters"], Decimal("8"))
+        self.assertEqual(report_rows[1]["item_line_count"], 1)
+        self.assertEqual(report_rows[1]["item_total_meters"], Decimal("4"))
 
     def test_edit_challan_updates_grouped_lines(self):
         c = Challan.objects.create()
