@@ -20,7 +20,7 @@
       <thead class="bg-slate-100">
         <tr>
           <th class="px-3 py-2 text-left text-sm font-semibold w-14">Item #</th>
-          <th class="px-3 py-2 text-left text-sm font-semibold w-28 max-w-[7rem]">Description</th>
+          <th class="px-3 py-2 text-left text-sm font-semibold w-60">Description</th>
           <th class="px-3 py-2 text-left text-sm font-semibold w-14">Count</th>
           <th class="px-3 py-2 text-left text-sm font-semibold">Meters</th>
           <th class="px-3 py-2 text-left text-sm font-semibold w-28">Total Meters</th>
@@ -29,11 +29,11 @@
       <tbody>
         {% for row in report_rows %}
           <tr class="border-t border-slate-200">
-            <td class="px-3 py-2 align-top">{{ row.item_number }}</td>
-            <td class="px-3 py-2 description-cell align-top w-28 max-w-[7rem]">
+            <td class="px-3 py-2 align-middle">{{ row.item_number }}</td>
+            <td class="px-3 py-2 description-cell align-middle w-60">
               {{ row.description|default:"—" }}
             </td>
-            <td class="px-3 py-2 align-top">{{ row.item_line_count }}</td>
+            <td class="px-3 py-2 align-middle">{{ row.item_line_count }}</td>
             <td class="px-3 py-2 align-top meters-inline-cell">
               <div class="meters-inline">
                 {% for meters in row.meters_values %}
@@ -41,7 +41,7 @@
                 {% endfor %}
               </div>
             </td>
-            <td class="px-3 py-2 align-top whitespace-nowrap font-medium">
+            <td class="px-3 py-2 align-middle whitespace-nowrap font-medium">
               {{ row.item_total_meters|floatformat:-2 }}
             </td>
           </tr>
